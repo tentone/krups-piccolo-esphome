@@ -1,0 +1,43 @@
+type: vertical-stack
+title: Coffe Machine
+cards:
+  - show_name: false
+    show_icon: true
+    show_state: false
+    type: glance
+    entities:
+      - entity: button.coffe_machine_power_on_off
+        tap_action:
+          action: toggle
+      - entity: binary_sensor.coffe_machine_ready
+      - entity: binary_sensor.coffe_machine_heating_up
+      - entity: switch.coffe_machine_coffe
+        tap_action:
+          action: toggle
+      - entity: button.coffe_machine_expresso_short
+        tap_action:
+          action: toggle
+      - entity: button.coffe_machine_coffe_long
+        tap_action:
+          action: toggle
+    columns: 3
+  - type: picture-elements
+    image: <IMAGE_URL>/blank.png
+    elements:
+      - type: image
+        image: <IMAGE_URL>/krups.png
+        style:
+          top: 50%
+          left: 50%
+          width: 70%
+      - type: conditional
+        conditions:
+          - entity: binary_sensor.coffe_machine_power
+            state: "on"
+        elements:
+          - type: image
+            image: <IMAGE_URL>/krups-on.png
+            style:
+              top: 50%
+              left: 50%
+              width: 70%

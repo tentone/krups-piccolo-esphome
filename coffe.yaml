@@ -1,0 +1,240 @@
+esphome:
+  name: coffe-machine
+  friendly_name: Coffe Machine
+
+esp8266:
+  board: nodemcuv2
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "<ENCRYPTION_KEY_HERE>"
+
+ota:
+  - platform: esphome
+    password: "<OTA_PASSWORD_HERE>"
+
+# Variables
+globals:
+  # Maitenance flag (persistent)
+   - id: maitenance_flag
+     type: int
+     restore_value: true
+     initial_value: '0'
+
+button:
+  # Power button
+  - platform: template
+    name: "Power On/Off"
+    id: power_button
+    icon: "mdi:power-cycle"
+    on_press:
+        then:
+          - switch.turn_off: coffe_relay
+          - switch.turn_on: power_relay
+          - delay: 1s
+          - switch.turn_off: power_relay
+  # Start Maintenance
+  - platform: template
+    name: "Maintenance Mode"
+    id: maintenance_button
+    icon: "mdi:wrench"
+    on_press:
+        then:
+          - switch.turn_off: coffe_relay
+          - switch.turn_on: power_relay
+          - delay: 8s
+          - switch.turn_off: power_relay
+  # Coffe (Short)
+  - platform: template
+    name: "Expresso (Short)"
+    id: short_coffe_button
+    icon: "mdi:size-s"
+    on_press:
+        - if:
+            condition:
+               switch.is_on: led_ready
+            then:
+              - switch.turn_on: coffe_relay
+              - delay: 12s
+              - switch.turn_off: coffe_relay
+  # Coffe (Medium)
+  - platform: template
+    name: "Expresso (Long)"
+    id: medium_coffe_button
+    icon: "mdi:size-m"
+    on_press:
+        - if:
+            condition:
+               switch.is_on: led_ready
+            then:
+              - switch.turn_on: coffe_relay
+              - delay: 16s
+              - switch.turn_off: coffe_relay
+  # Coffe (Long)
+  - platform: template
+    name: "Coffe (Long)"
+    id: large_coffe_button
+    icon: "mdi:size-xxl"
+    on_press:
+      - if:
+          condition:
+              switch.is_on: led_ready
+          then:
+            - switch.turn_on: coffe_relay
+            - delay: 35s
+            - switch.turn_off: coffe_relay
+
+switch:
+  # Power Relay
+  - platform: gpio
+    name: "Power On/Off"
+    id: power_relay
+    internal: true
+    icon: "mdi:power-cycle"
+    pin:
+      number: D1
+      inverted: true
+  # Coffe Relay
+  - platform: gpio
+    icon: "mdi:coffee"
+    id: coffe_relay
+    internal: false
+    name: "Coffe"
+    pin:
+      number: D2
+      inverted: true
+  # Heating LED (RGB)
+  - platform: gpio
+    name: "Heating LED"
+    internal: true
+    pin: 
+      number: D8
+    id: led_heating
+  # Ready LED
+  - platform: gpio
+    name: "Ready LED"
+    internal: true
+    pin: 
+      number: D4
+    id: led_ready
+
+
+binary_sensor:
+  # Ready indicator
+  - platform: gpio
+    name: "Ready"
+    id: green_led
+    icon: "mdi:coffee-maker-check"
+    pin:
+      number: D5
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    filters:
+      - delayed_off: 100ms
+    on_press: 
+      then:
+        switch.turn_on: led_ready
+    on_release: 
+      then:
+        switch.turn_off: led_ready
+
+  # Heating Up
+  - platform: gpio
+    name: "Heating Up"
+    id: red_led
+    icon: "mdi:thermometer-plus"
+    pin:
+      number: D6
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    filters:
+      - delayed_off: 1500ms
+    on_press: 
+      then:
+        switch.turn_on: led_heating
+    on_release: 
+      then:
+        switch.turn_off: led_heating
+
+  # Maitenance Needed
+  - platform: template
+    name: "Maintenance"
+    icon: "mdi:alert-circle"
+    device_class: problem
+    filters:
+      - delayed_on: 3000ms
+      - delayed_off: 1000ms
+    lambda: |-
+      if (id(red_led).state && id(green_led).state) {
+        id(maitenance_flag) = 1;
+        return true;
+      } else {
+        return false;
+      }
+
+  # Power 
+  - platform: template
+    name: "Power"
+    icon: "mdi:power"
+    filters:
+      - delayed_on: 200ms
+      - delayed_off: 200ms
+    lambda: |-
+      if (id(red_led).state || id(green_led).state) {
+        return true;
+      } else {
+        return false;
+      }
+  
+  # Power Physical Button
+  - platform: gpio
+    name: "Power Button"
+    internal: true
+    id: user_power_button
+    pin:
+      number: D7
+      mode:
+        input: true
+        pullup: true
+      inverted: True
+    filters:
+      - delayed_off: 100ms
+    on_press: 
+      then:
+        - button.press: power_button
+
+  # Coffe Physical Button
+  - platform: gpio
+    name: "Coffe Button"
+    internal: true
+    id: user_button
+    pin:
+      number: D3
+      mode:
+        input: true
+        pullup: true
+      inverted: False
+    filters:
+      - delayed_off: 100ms
+    on_multi_click:
+        - timing:
+             - ON for at most 1s
+             - OFF for at least 0.2s
+          then:
+            - button.press: short_coffe_button
+        - timing:
+             - ON for at least 1.2s
+          then:
+            - button.press: large_coffe_button
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
