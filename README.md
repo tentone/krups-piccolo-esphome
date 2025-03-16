@@ -8,6 +8,14 @@
      - Short press for expresso
      - Long press for large coffe
 
+```mermaid
+  graph TD;
+      HEATING_UP-->WAITING;
+      WAITING-->COFFE;
+      COFFE-->HEATING_UP;
+      HEATING_UP-->MAITENANCE
+```
+
 ## Material
  - Two relays (board)
    - Control pump
@@ -19,16 +27,6 @@
    - Preferably one that can be easily attached to the machine shell
 
 ## Control board
- 
-
-# State Machine
-```mermaid
-  graph TD;
-      HEATING_UP--WAITING;
-      WAITING-->COFFE;
-      COFFE-->HEATING_UP;
-      HEATING_UP-->MAITENANCE
-```
 
 
 ## Installation 
