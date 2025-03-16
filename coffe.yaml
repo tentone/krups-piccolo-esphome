@@ -24,6 +24,14 @@ globals:
      type: int
      restore_value: true
      initial_value: '0'
+  # State flag
+  # 0 -> Off
+  # 1 -> HEATING_UP
+  # 2 -> READY
+  # 3 -> COFFE
+   - id: state_flag
+     type: int
+     initial_value: '0'
 
 button:
   # Power button
@@ -37,6 +45,16 @@ button:
           - switch.turn_on: power_relay
           - delay: 1s
           - switch.turn_off: power_relay
+          - lambda: |-
+              // Check if state is off
+              if (id(state_flag) == 0) {
+                // Move to Heating up
+                id(state_flag) = 1;
+              } else {
+                // Turn off
+                id(state_flag) = 0;
+              }
+          
   # Start Maintenance
   - platform: template
     name: "Maintenance Mode"
@@ -85,7 +103,7 @@ button:
               switch.is_on: led_ready
           then:
             - switch.turn_on: coffe_relay
-            - delay: 35s
+            - delay: 30s
             - switch.turn_off: coffe_relay
 
 switch:
@@ -107,28 +125,29 @@ switch:
     pin:
       number: D2
       inverted: true
-  # Heating LED (RGB)
+  # Heating LED (RGB) (Output)
   - platform: gpio
     name: "Heating LED"
     internal: true
     pin: 
       number: D8
     id: led_heating
-  # Ready LED
+  # Ready LED (Output)
   - platform: gpio
     name: "Ready LED"
     internal: true
     pin: 
       number: D4
     id: led_ready
-
+            
 
 binary_sensor:
-  # Ready indicator
+  # Ready indicator (Input, Green LED)
   - platform: gpio
     name: "Ready"
     id: green_led
     icon: "mdi:coffee-maker-check"
+    internal: false
     pin:
       number: D5
       mode:
@@ -144,7 +163,7 @@ binary_sensor:
       then:
         switch.turn_off: led_ready
 
-  # Heating Up
+  # Heating Up (Input, Red LED)
   - platform: gpio
     name: "Heating Up"
     id: red_led
@@ -164,7 +183,7 @@ binary_sensor:
       then:
         switch.turn_off: led_heating
 
-  # Maitenance Needed
+  # Maintenance Flag 
   - platform: template
     name: "Maintenance"
     icon: "mdi:alert-circle"
@@ -173,11 +192,17 @@ binary_sensor:
       - delayed_on: 3000ms
       - delayed_off: 1000ms
     lambda: |-
+      // If both red and green are on the machine needs maintenance
       if (id(red_led).state && id(green_led).state) {
         id(maitenance_flag) = 1;
         return true;
       } else {
-        return false;
+        // If only green is turned on reset maitenance
+        if (id(green_led).state)) {
+          id(maitenance_flag) = 0;
+        }
+
+        return id(maitenance_flag) == 1;
       }
 
   # Power 
@@ -188,11 +213,8 @@ binary_sensor:
       - delayed_on: 200ms
       - delayed_off: 200ms
     lambda: |-
-      if (id(red_led).state || id(green_led).state) {
-        return true;
-      } else {
-        return false;
-      }
+      // Any state other than OFF
+      return id(state_flag) > 0;
   
   # Power Physical Button
   - platform: gpio
