@@ -1,4 +1,4 @@
-# krups-piccolo-esphome
+# KRUPS Piccolo ESPHome
  - ESPHome based controller for dolce gusto (krups) piccolo coffer machine
  - Control coffe machine remotely
    - Turn on/off
@@ -7,6 +7,16 @@
    - Start and stop coffe automatically
      - Short press for expresso
      - Long press for large coffe
+
+## Material
+ - Two relays (board)
+   - Control pump
+   - Turn on/off
+ - Optocoupler PC817 board (2 inputs)
+   - Status LED's
+ - ESP board (code uses NodeMCU board w/ ESP8266)
+ - Button (any small button will do)
+   - Preferably one that can be easily attached to the machine shell
 
 ## Control board
  
@@ -31,4 +41,5 @@
 ## HA Card
 
  - Use `card.yaml` template to create card
- - Replace the URL to acess image files 
+ - Replace the URL to acess image files
+ - <img src="readme/card.png" width=300>
