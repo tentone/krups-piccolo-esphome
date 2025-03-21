@@ -33,6 +33,38 @@ globals:
      type: int
      initial_value: '0'
 
+text_sensor:
+  - platform: template
+    name: "Status"
+    icon: "mdi:state-machine"
+    update_interval: 0.05s
+    lambda: |-
+      if (id(state_flag) == 0) {
+        id(led_heating).turn_off();
+        id(led_ready).turn_off();
+
+        return {"Off"};
+      } else if (id(state_flag) == 1) {
+        id(led_heating).turn_on();
+        id(led_ready).turn_off();
+
+        return {"Heating Up"};
+      } else if (id(state_flag) == 2) {
+        id(led_heating).turn_off();
+        id(led_ready).turn_on();
+
+        return {"Ready"};
+      } else if (id(state_flag) == 3) {
+        id(led_heating).turn_on();
+        id(led_ready).turn_on();
+
+        return {"Coffe"};
+      }
+
+      return {"Unknown"};
+
+
+
 button:
   # Power button
   - platform: template
@@ -43,7 +75,7 @@ button:
         then:
           - switch.turn_off: coffe_relay
           - switch.turn_on: power_relay
-          - delay: 1s
+          - delay: 0.5s
           - switch.turn_off: power_relay
           - lambda: |-
               // Check if state is off
@@ -103,7 +135,7 @@ button:
               switch.is_on: led_ready
           then:
             - switch.turn_on: coffe_relay
-            - delay: 30s
+            - delay: 32s
             - switch.turn_off: coffe_relay
 
 switch:
@@ -125,6 +157,24 @@ switch:
     pin:
       number: D2
       inverted: true
+    on_turn_on: 
+      then:
+        - lambda: |-
+            // If machine is "READY" move to "COFFE"
+            if (id(state_flag) == 2) {
+              id(state_flag) = 3;
+            } else {
+              // If machine is not in "READY" state reset relay
+              id(coffe_relay).turn_off();
+            }
+    on_turn_off: 
+      then:
+        - lambda: |-
+            // If machine was in "COFFE" move to "HEATING_UP"
+            if (id(state_flag) == 3) {
+              id(state_flag) = 1;
+            }
+
   # Heating LED (RGB) (Output)
   - platform: gpio
     name: "Heating LED"
@@ -155,13 +205,20 @@ binary_sensor:
         pullup: true
       inverted: true
     filters:
-      - delayed_off: 100ms
+      - delayed_off: 20ms
+      - delayed_off: 20ms
     on_press: 
       then:
-        switch.turn_on: led_ready
+        lambda: |-
+          // If state was "HEATING_UP" or "COFFE" move to "READY" 
+          id(state_flag) = 2;
     on_release: 
       then:
-        switch.turn_off: led_ready
+        lambda: |-
+          // If state was "READY" the machine has turned off automatically
+          if (id(state_flag) == 2) {
+            id(state_flag) = 0;
+          }
 
   # Heating Up (Input, Red LED)
   - platform: gpio
@@ -175,22 +232,14 @@ binary_sensor:
         pullup: true
       inverted: true
     filters:
-      - delayed_off: 1500ms
-    on_press: 
-      then:
-        switch.turn_on: led_heating
-    on_release: 
-      then:
-        switch.turn_off: led_heating
+      - delayed_on: 20ms
+      - delayed_off: 20ms
 
   # Maintenance Flag 
   - platform: template
     name: "Maintenance"
     icon: "mdi:alert-circle"
     device_class: problem
-    filters:
-      - delayed_on: 3000ms
-      - delayed_off: 1000ms
     lambda: |-
       // If both red and green are on the machine needs maintenance
       if (id(red_led).state && id(green_led).state) {
@@ -198,23 +247,12 @@ binary_sensor:
         return true;
       } else {
         // If only green is turned on reset maitenance
-        if (id(green_led).state)) {
+        if (id(green_led).state) {
           id(maitenance_flag) = 0;
         }
-
+        
         return id(maitenance_flag) == 1;
       }
-
-  # Power 
-  - platform: template
-    name: "Power"
-    icon: "mdi:power"
-    filters:
-      - delayed_on: 200ms
-      - delayed_off: 200ms
-    lambda: |-
-      // Any state other than OFF
-      return id(state_flag) > 0;
   
   # Power Physical Button
   - platform: gpio
@@ -251,11 +289,23 @@ binary_sensor:
              - ON for at most 1s
              - OFF for at least 0.2s
           then:
-            - button.press: short_coffe_button
+              - if:
+                  condition:
+                    switch.is_on: coffe_relay
+                  then:
+                    - switch.turn_off: coffe_relay
+                  else:
+                    - button.press: short_coffe_button
         - timing:
              - ON for at least 1.2s
           then:
-            - button.press: large_coffe_button
+            - if:
+                condition:
+                    switch.is_on: coffe_relay
+                then:
+                  - switch.turn_off: coffe_relay
+                else:
+                  - button.press: large_coffe_button
 
 wifi:
   ssid: !secret wifi_ssid
