@@ -73,10 +73,6 @@ button:
     icon: "mdi:power-cycle"
     on_press:
         then:
-          - switch.turn_off: coffe_relay
-          - switch.turn_on: power_relay
-          - delay: 0.5s
-          - switch.turn_off: power_relay
           - lambda: |-
               // Check if state is off
               if (id(state_flag) == 0) {
@@ -86,6 +82,11 @@ button:
                 // Turn off
                 id(state_flag) = 0;
               }
+          - switch.turn_off: coffe_relay
+          - switch.turn_on: power_relay
+          - delay: 1.0s
+          - switch.turn_off: power_relay
+
           
   # Start Maintenance
   - platform: template
@@ -211,7 +212,9 @@ binary_sensor:
       then:
         lambda: |-
           // If state was "HEATING_UP" or "COFFE" move to "READY" 
-          id(state_flag) = 2;
+          if (id(state_flag) == 1 || id(state_flag) == 3) {
+            id(state_flag) = 2;
+          }
     on_release: 
       then:
         lambda: |-
