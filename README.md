@@ -26,8 +26,33 @@
  - Button (any small button will do)
    - Preferably one that can be easily attached to the machine shell
 
-## Control board
+## Diagram
 
+
+## Control board
+ - The controlo board of the machine is nicely labeled
+ - The NCT input is used for the temperature sensor
+   - NTC sensor
+   - Not Used for this project
+ - MMI LED
+ - Composed of 4 pins
+    - 
+   - Red LED (GND)
+   - On/Off Button (Activated w/ 5V) 
+   - 5V
+   - Green LED (GND)
+ - MMI BUT
+   - Not used for this project
+ - V. Det
+   - Cold (Activated /w 5V)
+   - 5V
+   - Hot (Activated /w 5V)
+ - FW
+   - Enabled/disable the pump
+   - Actived with a magnetic sensor when the lid closes
+   - Shunted for this project
+
+<img src="readme/board.png" width=300>
 
 ## Installation 
  - Install ESPHome Builder in HAOS
