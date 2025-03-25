@@ -16,6 +16,13 @@
       HEATING_UP-->MAITENANCE
 ```
 
+## Card
+
+ - Use `card.yaml` template to create card
+ - Configure webservice to serve the files.
+ - Replace the URL to acess image files
+ - <img src="readme/card.png" width=300>
+
 ## Material
  - Two relays (board)
    - Control pump
@@ -30,27 +37,22 @@
 
 
 ## Control board
- - The controlo board of the machine is nicely labeled
- - The NCT input is used for the temperature sensor
-   - NTC sensor
+ - The control board of the machine is well labeled
+ - NCT (temperature sensor)
    - Not Used for this project
- - MMI LED
- - Composed of 4 pins
-    - 
+ - MMI (Button and Leds)
    - Red LED (GND)
    - On/Off Button (Activated w/ 5V) 
    - 5V
    - Green LED (GND)
- - MMI BUT
-   - Not used for this project
  - V. Det
    - Cold (Activated /w 5V)
    - 5V
    - Hot (Activated /w 5V)
- - FW
+ - Hold
    - Enabled/disable the pump
    - Actived with a magnetic sensor when the lid closes
-   - Shunted for this project
+   - Can be shunted for this project
 
 <img src="readme/board.png" width=300>
 
@@ -60,9 +62,3 @@
  - Copy the `coffe.yaml` code to your file.
    - Replace keys
  - Compile and install.
-
-## HA Card
-
- - Use `card.yaml` template to create card
- - Replace the URL to acess image files
- - <img src="readme/card.png" width=300>
