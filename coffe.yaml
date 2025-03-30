@@ -24,6 +24,11 @@ globals:
      type: int
      restore_value: true
      initial_value: '0'
+  # Coffe counter (persistent)
+   - id: coffe_counter
+     type: int
+     restore_value: true
+     initial_value: '0'
   # State flag
   # 0 -> Off
   # 1 -> HEATING_UP
@@ -37,33 +42,48 @@ text_sensor:
   - platform: template
     name: "Status"
     icon: "mdi:state-machine"
+    id: machine_state_template
+    internal: False
+
+  - platform: template
+    name: "Status"
+    icon: "mdi:state-machine"
     update_interval: 0.05s
+    internal: True
     lambda: |-
       if (id(state_flag) == 0) {
         id(led_heating).turn_off();
         id(led_ready).turn_off();
 
+        id(machine_state_template).publish_state("Off");
         return {"Off"};
       } else if (id(state_flag) == 1) {
         id(led_heating).turn_on();
         id(led_ready).turn_off();
 
+        id(machine_state_template).publish_state("Heating Up");
         return {"Heating Up"};
       } else if (id(state_flag) == 2) {
         id(led_heating).turn_off();
         id(led_ready).turn_on();
 
+        id(machine_state_template).publish_state("Ready");
         return {"Ready"};
       } else if (id(state_flag) == 3) {
         id(led_heating).turn_on();
         id(led_ready).turn_on();
 
+        id(machine_state_template).publish_state("Coffe");
         return {"Coffe"};
       }
 
+      id(machine_state_template).publish_state("Unknown");
       return {"Unknown"};
 
-
+sensor:
+  - platform: template
+    name: "Coffe Counter"
+    id: coffe_counter_sensor
 
 button:
   # Power button
@@ -136,7 +156,7 @@ button:
               switch.is_on: led_ready
           then:
             - switch.turn_on: coffe_relay
-            - delay: 32s
+            - delay: 36s
             - switch.turn_off: coffe_relay
 
 switch:
@@ -163,6 +183,8 @@ switch:
         - lambda: |-
             // If machine is "READY" move to "COFFE"
             if (id(state_flag) == 2) {
+              id(coffe_counter)++;
+              id(coffe_counter_sensor).publish_state(id(coffe_counter));
               id(state_flag) = 3;
             } else {
               // If machine is not in "READY" state reset relay
